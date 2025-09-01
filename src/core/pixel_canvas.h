@@ -1,18 +1,14 @@
 #ifndef PIXELCANVAS_H
 #define PIXELCANVAS_H
 
-#include <QMainWindow>
-#include <QToolBar>
-#include <QAction>
-#include <QActionGroup>
-#include <QSpinBox>
-#include <QLabel>
-#include <QPushButton>
-#include <QColorDialog>
-#include <QMenuBar>
-#include <QStatusBar>
-#include <QWidget>
 #include <QObject>
+#include <QImage>
+#include <QSize>
+#include <QColor>
+#include <QPoint>
+#include <QRect>
+
+#include "command_system.h"
 class PixelCanvas : public QObject
 {
     Q_OBJECT

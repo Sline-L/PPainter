@@ -1,18 +1,10 @@
 #ifndef CANVASWIDGET_H
 #define CANVASWIDGET_H
 
-#include <QMainWindow>
-#include <QToolBar>
-#include <QAction>
-#include <QActionGroup>
-#include <QSpinBox>
-#include <QLabel>
-#include <QPushButton>
-#include <QColorDialog>
-#include <QMenuBar>
-#include <QStatusBar>
 #include <QWidget>
-#include <QObject>
+
+#include "../core/pixel_canvas.h"
+#include "../core/drawing_tool.h"
 
 class CanvasWidget : public QWidget
 {

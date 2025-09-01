@@ -2,6 +2,10 @@
 #define NETWORKMANAGER_H
 
 #include <QObject>
+#include <QTcpSocket>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QByteArray>
 
 class NetworkManager : public QObject
 {

@@ -1,6 +1,9 @@
 #ifndef BRUSHTOOL_H
 #define BRUSHTOOL_H
 
+#include <QLine>
+#include <QPainterPath>
+
 #include "drawing_tool.h"
 class BrushTool : public DrawingTool
 {

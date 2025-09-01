@@ -2,6 +2,11 @@
 #define SYNCMANAGER_H
 
 #include <QObject>
+#include <QQueue>
+#include <QTimer>
+
+#include "network_manager.h"
+#include "protocol_handler.h"
 class SyncManager : public QObject
 {
     Q_OBJECT

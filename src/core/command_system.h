@@ -2,6 +2,9 @@
 #define COMMANDSYSTEM_H
 
 #include <QObject>
+#include <QStack>
+#include <QUndoCommand>
+
 class CommandSystem : public QObject
 {
     Q_OBJECT

@@ -2,15 +2,11 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QToolBar>
-#include <QAction>
-#include <QActionGroup>
-#include <QSpinBox>
-#include <QLabel>
-#include <QPushButton>
-#include <QColorDialog>
-#include <QMenuBar>
-#include <QStatusBar>
+
+#include "canvas_widget.h"
+#include "tool_bar.h"
+#include "layer_panel.h"
+#include "color_palette.h"
 
 class MainWindow : public QMainWindow
 {

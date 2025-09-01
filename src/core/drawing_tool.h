@@ -2,6 +2,10 @@
 #define DRAWINGTOOL_H
 
 #include <QObject>
+#include <OCursor>
+#include <QColor>
+#include <QPoint>
+
 
 class DrawingTool : public QObject
 {
