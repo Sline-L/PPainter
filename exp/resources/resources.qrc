@@ -1,0 +1,23 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <!-- 图标资源 -->
+        <!-- <file>icons/brush.png</file>
+        <file>icons/eraser.png</file>
+        <file>icons/selection.png</file>
+        <file>icons/color_picker.png</file>
+        <file>icons/zoom_in.png</file>
+        <file>icons/zoom_out.png</file>
+        <file>icons/undo.png</file>
+        <file>icons/redo.png</file>
+        
+        <!-- 光标资源 -->
+        <file>cursors/brush_cursor.png</file>
+        <file>cursors/eraser_cursor.png</file>
+        <file>cursors/selection_cursor.png</file> -->
+        
+        <!-- 其他资源 -->
+        <!-- <file>images/grid_pattern.png</file> -->
+        <!-- <file>images/transparency_bg.png</file> -->
+    </qresource>
+</RCC>
