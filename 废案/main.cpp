@@ -1,15 +1,11 @@
 #include <QApplication>
-#include "src/MainWindow.h"
+#include "src/ui/main_window.h"
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    
-    app.setApplicationName("Electronic Whiteboard");
-    app.setApplicationVersion("1.0");
-    app.setOrganizationName("WhiteboardApp");
     
     MainWindow window;
     window.show();
