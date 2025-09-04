@@ -1,0 +1,5 @@
+/home/Sline/Work/VSCode/Code/Qt/PPainter_exp/bulid/CMakeFiles/PixelWhiteboard.dir
+/home/Sline/Work/VSCode/Code/Qt/PPainter_exp/bulid/CMakeFiles/edit_cache.dir
+/home/Sline/Work/VSCode/Code/Qt/PPainter_exp/bulid/CMakeFiles/rebuild_cache.dir
+/home/Sline/Work/VSCode/Code/Qt/PPainter_exp/bulid/CMakeFiles/PixelWhiteboard_autogen_timestamp_deps.dir
+/home/Sline/Work/VSCode/Code/Qt/PPainter_exp/bulid/CMakeFiles/PixelWhiteboard_autogen.dir
