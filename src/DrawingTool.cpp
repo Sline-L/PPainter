@@ -3,46 +3,46 @@
 using namespace std;
 
 DrawingTool::DrawingTool()
-    : m_toolType(ToolType::Curve)
-    , m_penColor(Qt::black)
-    , m_penWidth(2)
+    : m_tool_type(ToolType::Curve)
+    , m_pen_color(Qt::black)
+    , m_pen_width(2)
 {
 }
 
 void DrawingTool::setToolType(ToolType type)
 {
-    m_toolType = type;
+    m_tool_type = type;
 }
 
 ToolType DrawingTool::getToolType() const
 {
-    return m_toolType;
+    return m_tool_type;
 }
 
 void DrawingTool::setPenColor(const QColor& color)
 {
-    m_penColor = color;
+    m_pen_color = color;
 }
 
 void DrawingTool::setPenWidth(int width)
 {
-    m_penWidth = qMax(1, width);
+    m_pen_width = qMax(1, width);
 }
 
 QColor DrawingTool::getPenColor() const
 {
-    return m_penColor;
+    return m_pen_color;
 }
 
 int DrawingTool::getPenWidth() const
 {
-    return m_penWidth;
+    return m_pen_width;
 }
 
 QPen DrawingTool::getPen() const
 {
-    QPen pen(m_penColor);
-    pen.setWidth(m_penWidth);
+    QPen pen(m_pen_color);
+    pen.setWidth(m_pen_width);
     pen.setCapStyle(Qt::RoundCap);
     pen.setJoinStyle(Qt::RoundJoin);
     return pen;
@@ -50,7 +50,7 @@ QPen DrawingTool::getPen() const
 
 void DrawingTool::reset()
 {
-    m_toolType = ToolType::Curve;
-    m_penColor = Qt::black;
-    m_penWidth = 2;
+    m_tool_type = ToolType::Curve;
+    m_pen_color = Qt::black;
+    m_pen_width = 2;
 }

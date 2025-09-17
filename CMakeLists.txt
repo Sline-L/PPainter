@@ -10,12 +10,14 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+# 源文件列表（将 resources.qrc 加入，CMAKE_AUTORCC 会处理它）
 set(SOURCES
     main.cpp
     src/MainWindow.cpp
     src/DrawingArea.cpp
     src/DrawingTool.cpp
     src/Imagepaster.cpp
+    resources.qrc
 )
 
 set(HEADERS

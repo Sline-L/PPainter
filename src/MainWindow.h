@@ -33,6 +33,7 @@ private slots:
     void selectLinetool();
     void selectCurveTool();
     void selectRectangleTool();
+    void selectTextTool();               // 新增：文本工具选择
     void changePenColor();
     void changePenWidth(int width);
     void about();
@@ -75,9 +76,12 @@ private:
     QAction *m_curveToolAction;
     QAction *m_rectangleToolAction;
     QAction *m_aboutAction;
-          //新建
+    // 新增文本工具动作
+    QAction *m_textToolAction;
+
+    // 新建：将插图功能放工具栏
     QAction *m_insertImageToRectAction;
-    QAction *m_insertImageAction;  // “向区域插入已有图片”
+    QAction *m_insertImageAction;  // “向区域插入已有图片”（仍保留菜单入口）
     QMenu   *m_openMenu;           // “打开”子菜单
     // 工具组
     QActionGroup *m_toolGroup;

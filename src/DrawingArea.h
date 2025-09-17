@@ -8,6 +8,7 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QPaintEvent>
+#include <QLineEdit>
 #include "DrawingTool.h"
 
 class MainWindow;
@@ -29,7 +30,8 @@ public:
     void saveImage(const QString& fileName);
     void loadImage(const QString& fileName);
     //新增
-     void pasteImage(const QPixmap &pixmap, const QRect &targetRect);
+    void pasteImage(const QPixmap &pixmap, const QRect &targetRect);
+
     // 画布大小
     void resizeCanvas(const QSize& size);
 
@@ -45,17 +47,24 @@ private:
     void drawRectangle(const QPoint &startPoint, const QPoint &endPoint, const QPoint &firstcornerPoint, const QPoint &secondcornerPoint);
     void initializeCanvas();
 
+    // 将 text 绘制到画布
+    void commitTextEdit();
+
 private:
     QPixmap m_canvas;           // 画布
-    DrawingTool m_drawingTool;  // 当前绘图工具
+    DrawingTool m_drawing_tool;  // 当前绘图工具
 
     bool m_drawing;             // 是否正在绘制
-    QPoint m_lastPoint;         // 上一个点
-    QPoint m_startPoint;        // 起始点（用于直线工具）
-    QPoint m_firstcornerPoint;  // 角落的点一（用于矩形工具）
-    QPoint m_secondcornerPoint; // 角落的点二（用于矩形工具）
+    QPoint m_last_point;        // 上一个点
+    QPoint m_start_point;       // 起始点（用于直线工具）
+    QPoint m_firstcorner_point;  // 角落的点一（用于矩形工具）
+    QPoint m_secondcorner_point; // 角落的点二（用于矩形工具）
 
-    QVector<QPoint> m_currentPath;  // 当前绘制路径
+    QVector<QPoint> m_current_path;  // 当前绘制路径
+
+    // 文本编辑相关
+    QLineEdit *m_text_edit;     // 在画布上临时输入文本
+    QPoint m_text_edit_pos;
 };
 
 #endif // DRAWINGAREA_H

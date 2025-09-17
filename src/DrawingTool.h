@@ -7,7 +7,8 @@
 enum class ToolType {
     Line,
     Rectangle,
-    Curve
+    Curve,
+    Text    // 新增：文本工具
 };
 
 class DrawingTool
@@ -31,9 +32,9 @@ public:
     void reset();
 
 private:
-    ToolType m_toolType;
-    QColor m_penColor;
-    int m_penWidth;
+    ToolType m_tool_type;
+    QColor m_pen_color;
+    int m_pen_width;
 };
 
 #endif // DRAWINGTOOL_H
