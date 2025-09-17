@@ -7,9 +7,9 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     
-    app.setApplicationName("Electronic Whiteboard");
+    app.setApplicationName("PPainter");
     app.setApplicationVersion("1.0");
-    app.setOrganizationName("WhiteboardApp");
+    app.setOrganizationName("PPainter Whiteboard");
     
     MainWindow window;
     window.show();

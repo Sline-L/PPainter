@@ -1,13 +1,15 @@
 #include "DrawingArea.h"
+#include "MainWindow.h"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QResizeEvent>
 
 using namespace std;
 
-DrawingArea::DrawingArea(QWidget *parent)
+DrawingArea::DrawingArea(QWidget *parent, MainWindow *window)
     : QWidget(parent)
     , m_drawing(false)
+    , window(window)
 {
     setAttribute(Qt::WA_StaticContents);
     setMinimumSize(800, 600);
@@ -20,7 +22,7 @@ void DrawingArea::initializeCanvas()
     if (canvasSize.isEmpty()) {
         canvasSize = QSize(800, 600);
     }
-    
+
     m_canvas = QPixmap(canvasSize);
     m_canvas.fill(Qt::white);
     update();
@@ -45,8 +47,8 @@ void DrawingArea::clearCanvas()
 void DrawingArea::saveImage(const QString& fileName)
 {
     if (!m_canvas.save(fileName)) {
-        QMessageBox::warning(this, tr("保存失败"), 
-                           tr("无法保存图片到 %1").arg(fileName));
+        QMessageBox::warning(this, tr("保存失败"),
+                             tr("无法保存图片到 %1").arg(fileName));
     }
 }
 
@@ -54,11 +56,11 @@ void DrawingArea::loadImage(const QString& fileName)
 {
     QPixmap loadedPixmap(fileName);
     if (loadedPixmap.isNull()) {
-        QMessageBox::warning(this, tr("加载失败"), 
-                           tr("无法加载图片 %1").arg(fileName));
+        QMessageBox::warning(this, tr("加载失败"),
+                             tr("无法加载图片 %1").arg(fileName));
         return;
     }
-    
+
     m_canvas = loadedPixmap.scaled(size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
     update();
 }
@@ -68,13 +70,13 @@ void DrawingArea::resizeCanvas(const QSize& size)
     if (size == m_canvas.size()) {
         return;
     }
-    
+
     QPixmap newCanvas(size);
     newCanvas.fill(Qt::white);
-    
+
     QPainter painter(&newCanvas);
     painter.drawPixmap(0, 0, m_canvas);
-    
+
     m_canvas = newCanvas;
     update();
 }
@@ -84,7 +86,7 @@ void DrawingArea::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     QRect dirtyRect = event->rect();
     painter.drawPixmap(dirtyRect, m_canvas, dirtyRect);
-    
+
     // 如果正在绘制直线，显示预览线
     if (m_drawing && m_drawingTool.getToolType() == ToolType::Line) {
         painter.setPen(m_drawingTool.getPen());
@@ -116,11 +118,12 @@ void DrawingArea::mouseMoveEvent(QMouseEvent *event)
 {
     if (event->buttons() & Qt::LeftButton && m_drawing) {
         QPoint currentPoint = event->pos();
-        
+
         if (m_drawingTool.getToolType() == ToolType::Curve) {
             // 曲线绘制：实时绘制到画布
-            drawLineTo(currentPoint);
-        } 
+            window->sendMessage(m_lastPoint, currentPoint, m_drawingTool.getPenColor(), m_drawingTool.getPenWidth());
+            m_lastPoint = currentPoint;
+        }
         else if (m_drawingTool.getToolType() == ToolType::Rectangle) {
             // 矩阵绘制：只更新预览
             m_lastPoint = currentPoint;
@@ -142,18 +145,21 @@ void DrawingArea::mouseReleaseEvent(QMouseEvent *event)
         QPoint endPoint = event->pos();
         QPoint finalfirstcornerPoint = QPoint(m_startPoint.x(), endPoint.y());
         QPoint finalsecondcornerPoint = QPoint(endPoint.x(), m_startPoint.y());
-        
+
         if (m_drawingTool.getToolType() == ToolType::Line) {
             // 直线绘制：在鼠标释放时绘制最终直线
-            drawLine(m_startPoint, endPoint);
+            window->sendMessage(m_startPoint, endPoint, m_drawingTool.getPenColor(), m_drawingTool.getPenWidth());
+            //drawLine(m_startPoint, endPoint, m_drawingTool.getPenColor(), m_drawingTool.getPenWidth());
+            update();
         }
         else if (m_drawingTool.getToolType() == ToolType::Rectangle) {
-            drawLine(m_startPoint, finalfirstcornerPoint);
-            drawLine(m_startPoint, finalsecondcornerPoint);
-            drawLine(finalfirstcornerPoint, endPoint);
-            drawLine(finalsecondcornerPoint, endPoint);
+            window->sendMessage(m_startPoint, finalfirstcornerPoint, m_drawingTool.getPenColor(), m_drawingTool.getPenWidth());
+            window->sendMessage(m_startPoint, finalsecondcornerPoint, m_drawingTool.getPenColor(), m_drawingTool.getPenWidth());
+            window->sendMessage(finalfirstcornerPoint, endPoint, m_drawingTool.getPenColor(), m_drawingTool.getPenWidth());
+            window->sendMessage(finalsecondcornerPoint, endPoint, m_drawingTool.getPenColor(), m_drawingTool.getPenWidth());
+            update();
         }
-        
+
 
         m_drawing = false;
         m_currentPath.clear();
@@ -166,31 +172,19 @@ void DrawingArea::resizeEvent(QResizeEvent *event)
     QWidget::resizeEvent(event);
 }
 
-void DrawingArea::drawLineTo(const QPoint &endPoint)
+void DrawingArea::drawLine(const QPoint &startPoint, const QPoint &endPoint, const QColor color, const int width)
 {
     QPainter painter(&m_canvas);
-    painter.setPen(m_drawingTool.getPen());
-    painter.drawLine(m_lastPoint, endPoint);
-    
-    // 更新需要重绘的区域
-    int rad = m_drawingTool.getPenWidth() / 2 + 2;
-    QRect updateRect = QRect(m_lastPoint, endPoint).normalized()
-                      .adjusted(-rad, -rad, +rad, +rad);
-    update(updateRect);
-    
-    m_lastPoint = endPoint;
-}
-
-void DrawingArea::drawLine(const QPoint &startPoint, const QPoint &endPoint)
-{
-    QPainter painter(&m_canvas);
-    painter.setPen(m_drawingTool.getPen());
+    QPen pen(color);
+    pen.setWidth(width);
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::RoundJoin);
+    painter.setPen(pen);
     painter.drawLine(startPoint, endPoint);
-    
-    // 更新需要重绘的区域
+
     int rad = m_drawingTool.getPenWidth() / 2 + 2;
     QRect updateRect = QRect(startPoint, endPoint).normalized()
-                      .adjusted(-rad, -rad, +rad, +rad);
+                           .adjusted(-rad, -rad, +rad, +rad);
     update(updateRect);
 }
 
@@ -202,10 +196,20 @@ void DrawingArea::drawRectangle(const QPoint &startPoint, const QPoint &endPoint
     painter.drawLine(startPoint, secondcornerPoint);
     painter.drawLine(firstcornerPoint, endPoint);
     painter.drawLine(secondcornerPoint, endPoint);
-    
+
     // 更新需要重绘的区域
     int rad = m_drawingTool.getPenWidth() / 2 + 2;
     QRect updateRect = QRect(startPoint, endPoint).normalized()
-                      .adjusted(-rad, -rad, +rad, +rad);
+                           .adjusted(-rad, -rad, +rad, +rad);
     update(updateRect);
+}
+
+
+void DrawingArea::pasteImage(const QPixmap &pixmap, const QRect &targetRect)
+{
+    if (pixmap.isNull()) return;
+    QPainter p(&m_canvas);
+    p.drawPixmap(targetRect.topLeft(), pixmap);
+    p.end();
+    update(targetRect);
 }

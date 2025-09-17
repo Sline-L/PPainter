@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QTcpSocket>
 #include <QToolBar>
 #include <QAction>
 #include <QActionGroup>
@@ -11,12 +12,15 @@
 #include <QColorDialog>
 #include <QMenuBar>
 #include <QStatusBar>
-#include "DrawingArea.h"
+#include "Imagepaster.h"
+
+class DrawingArea;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
+    friend class DrawingArea;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
@@ -32,6 +36,14 @@ private slots:
     void changePenColor();
     void changePenWidth(int width);
     void about();
+    void sendMessage(const QPoint start,const  QPoint end, const QColor color, const int width);
+    void connectToServer();
+    void disconnectFromServer();
+    void onConnected();
+    void onDisconnected();
+    void onReadyRead();
+    void onErrorOccurred(QAbstractSocket::SocketError error);
+
 
 private:
     void createActions();
@@ -42,7 +54,7 @@ private:
 
 private:
     DrawingArea *m_drawingArea;
-    
+    ImagePaster *m_imagePaster;
     // 菜单
     QMenu *m_fileMenu;
     QMenu *m_toolMenu;
@@ -63,7 +75,10 @@ private:
     QAction *m_curveToolAction;
     QAction *m_rectangleToolAction;
     QAction *m_aboutAction;
-    
+          //新建
+    QAction *m_insertImageToRectAction;
+    QAction *m_insertImageAction;  // “向区域插入已有图片”
+    QMenu   *m_openMenu;           // “打开”子菜单
     // 工具组
     QActionGroup *m_toolGroup;
     
@@ -76,6 +91,29 @@ private:
     QLabel *m_statusLabel;
     
     QString m_currentFile;
+
+    QTcpSocket *socket;
+    QLineEdit *serverAddressInput;
+    QLineEdit *serverPortInput;
+    QPushButton *connectButton;
+    QPushButton *disconnectButton;
+
+    // 数据接收缓冲区
+    QByteArray receive_buffer;
+
+    // 当前正在接收的数据信息
+    enum ReceiveState {
+        WaitingForHeader,
+        ReceivingMessage,
+        ReceivingImage
+    };
+
+    ReceiveState current_state;
+    qint64 expected_data_size;
+    QString current_filename;
+    QByteArray current_data_buffer;
+    void processReceivedData();
+    void resetReceiveState();
 };
 
 #endif // MAINWINDOW_H
