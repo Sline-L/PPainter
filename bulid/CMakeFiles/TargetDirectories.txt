@@ -1,5 +1,0 @@
-/home/Sline/Work/VSCode/Code/Qt/PPainter/bulid/CMakeFiles/PPainter.dir
-/home/Sline/Work/VSCode/Code/Qt/PPainter/bulid/CMakeFiles/edit_cache.dir
-/home/Sline/Work/VSCode/Code/Qt/PPainter/bulid/CMakeFiles/rebuild_cache.dir
-/home/Sline/Work/VSCode/Code/Qt/PPainter/bulid/CMakeFiles/PPainter_autogen_timestamp_deps.dir
-/home/Sline/Work/VSCode/Code/Qt/PPainter/bulid/CMakeFiles/PPainter_autogen.dir

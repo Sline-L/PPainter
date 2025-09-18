@@ -184,7 +184,6 @@ void MainWindow::createMenus()
 
     m_openMenu = m_fileMenu->addMenu(tr("打开(&O)"));
     m_openMenu->addAction(m_openAction);
-    // 菜单中仍可保留一个文本入口到插入图片（从文件选择）
     m_openMenu->addAction(m_insertImageAction);
 
     m_fileMenu->addSeparator();
@@ -455,6 +454,44 @@ void MainWindow::sendMessage(const QPoint start, const QPoint end, const QColor 
     packet.append(QString("%1").arg(arr.size(), 8, 10, QChar('0')).toUtf8());
     packet.append("|");
     packet.append(arr);
+    socket->write(packet);
+}
+
+void MainWindow::sendImage(QString file_path, QPoint start, QPoint end)
+{
+    if (socket->state() != QAbstractSocket::ConnectedState) {
+        return;
+    }
+
+    if (file_path.isEmpty()) return;
+
+    QFile file(file_path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return;
+    }
+
+    QByteArray image_data = file.readAll();
+    file.close();
+
+    QString file_name = QFileInfo(file_path).fileName();
+
+    // 改进的协议：IMG|filename_size_in_4_bytes|filename|image_size_in_8_bytes|image_data
+    QByteArray filename_data = file_name.toUtf8();
+    QByteArray packet;
+    QByteArray arr;
+    QDataStream stream(&arr, QIODevice::WriteOnly);
+    stream << start  << end;
+
+    packet.append("IMG|");
+    packet.append(arr);
+    packet.append(QString("%1").arg(filename_data.size(), 4, 10, QChar('0')).toUtf8());
+    packet.append("|");
+    packet.append(filename_data);
+    packet.append("|");
+    packet.append(QString("%1").arg(image_data.size(), 8, 10, QChar('0')).toUtf8());
+    packet.append("|");
+    packet.append(image_data);
+
     socket->write(packet);
 }
 

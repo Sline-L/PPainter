@@ -16,12 +16,14 @@
 #include "Imagepaster.h"
 
 class DrawingArea;
+class ImagePaster;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
     friend class DrawingArea;
+    friend class ImagePaster;
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
@@ -40,6 +42,7 @@ private slots:
     void changePenWidth(int width);
     void about();
     void sendMessage(const QPoint start,const  QPoint end, const QColor color, const int width);
+    void sendImage(QString file_path, QPoint start, QPoint end);
     void connectToServer();
     void disconnectFromServer();
     void onConnected();
@@ -105,6 +108,7 @@ private:
     QLineEdit *serverPortInput;
     QPushButton *connectButton;
     QPushButton *disconnectButton;
+    QPoint start, end;
 
     // 数据接收缓冲区
     QByteArray receive_buffer;

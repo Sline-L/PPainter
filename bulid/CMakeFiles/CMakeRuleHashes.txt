@@ -1,4 +1,0 @@
-# Hashes of file build rules.
-a12f9427fd2af0c093540ec0849392ed CMakeFiles/PPainter_autogen
-9b01a1e2e90300e058cb467c37ac8ed5 PPainter_autogen/timestamp
-2477219a2b7ac5aa5b65f675820cfd63 qrc_resources.cpp

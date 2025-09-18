@@ -8,10 +8,12 @@
 #include <QRubberBand>
 
 class DrawingArea;
+class MainWindow;
 
 class ImagePaster : public QObject
 {
     Q_OBJECT
+    friend MainWindow;
 public:
     explicit ImagePaster(DrawingArea *area);
 
@@ -31,6 +33,7 @@ private:
     QPoint       m_endPoint;
     QPixmap      m_pixmap;
     QRubberBand *m_rubberBand;
+    MainWindow* m;
 };
 
 #endif // IMAGEPASTER_H

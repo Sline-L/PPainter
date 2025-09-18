@@ -9,7 +9,7 @@ enum class ToolType {
     Rectangle,
     Curve,
     Text,
-    Eraser   // 新增：橡皮擦（矩形框选擦除）
+    Eraser
 };
 
 class DrawingTool
