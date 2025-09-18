@@ -12,6 +12,7 @@
 #include <QColorDialog>
 #include <QMenuBar>
 #include <QStatusBar>
+#include <QLineEdit>
 #include "Imagepaster.h"
 
 class DrawingArea;
@@ -33,7 +34,8 @@ private slots:
     void selectLinetool();
     void selectCurveTool();
     void selectRectangleTool();
-    void selectTextTool();               // 新增：文本工具选择
+    void selectTextTool();
+    void selectEraserTool();
     void changePenColor();
     void changePenWidth(int width);
     void about();
@@ -76,13 +78,15 @@ private:
     QAction *m_curveToolAction;
     QAction *m_rectangleToolAction;
     QAction *m_aboutAction;
-    // 新增文本工具动作
     QAction *m_textToolAction;
+    QAction *m_eraserToolAction;
 
-    // 新建：将插图功能放工具栏
+    // 插图动作
     QAction *m_insertImageToRectAction;
-    QAction *m_insertImageAction;  // “向区域插入已有图片”（仍保留菜单入口）
-    QMenu   *m_openMenu;           // “打开”子菜单
+    QAction *m_insertImageAction;
+    QAction *m_pasteImageAction;
+    QMenu   *m_openMenu;
+
     // 工具组
     QActionGroup *m_toolGroup;
     

@@ -10,14 +10,13 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# 源文件列表（将 resources.qrc 加入，CMAKE_AUTORCC 会处理它）
+# 源文件列表
 set(SOURCES
     main.cpp
     src/MainWindow.cpp
     src/DrawingArea.cpp
     src/DrawingTool.cpp
     src/Imagepaster.cpp
-    resources.qrc
 )
 
 set(HEADERS
@@ -27,11 +26,13 @@ set(HEADERS
     src/Imagepaster.h
 )
 
-add_executable(PPainter ${SOURCES} ${HEADERS})
+# 添加 Qt 资源
+qt_add_resources(RES_SRCS resources.qrc)
+
+add_executable(PPainter ${SOURCES} ${HEADERS} ${RES_SRCS})
 
 target_link_libraries(PPainter Qt6::Core Qt6::Widgets Qt6::Gui Qt6::Network)
 
-# 设置输出目录
 set_target_properties(PPainter PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )

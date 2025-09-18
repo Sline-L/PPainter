@@ -8,7 +8,8 @@ enum class ToolType {
     Line,
     Rectangle,
     Curve,
-    Text    // 新增：文本工具
+    Text,
+    Eraser   // 新增：橡皮擦（矩形框选擦除）
 };
 
 class DrawingTool
@@ -16,11 +17,9 @@ class DrawingTool
 public:
     DrawingTool();
     
-    // 工具类型
     void setToolType(ToolType type);
     ToolType getToolType() const;
     
-    // 画笔设置
     void setPenColor(const QColor& color);
     void setPenWidth(int width);
     
@@ -28,7 +27,6 @@ public:
     int getPenWidth() const;
     QPen getPen() const;
     
-    // 重置为默认设置
     void reset();
 
 private:

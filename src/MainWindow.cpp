@@ -13,13 +13,14 @@
 #include <QStandardPaths>
 #include <QTcpSocket>
 #include <QIcon>
+#include <QDebug>
 
 using namespace std;
 
 QByteArray colorToByteArray(const QColor &color) {
     QByteArray byteArray;
     QDataStream stream(&byteArray, QIODevice::WriteOnly);
-    stream << color; // 使用 QDataStream 输出操作符序列化 QColor
+    stream << color;
     return byteArray;
 }
 
@@ -28,15 +29,12 @@ MainWindow::MainWindow(QWidget *parent)
     , m_drawingArea(nullptr)
     , current_state(WaitingForHeader)
 {
-    // 创建中央部件
     QWidget *centralWidget = new QWidget(this);
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
 
-    // 创建绘图区域
     m_drawingArea = new DrawingArea(centralWidget, this);
     m_imagePaster = new ImagePaster(m_drawingArea);
 
-    // 创建网络连接控件
     serverAddressInput = new QLineEdit(centralWidget);
     serverAddressInput->setPlaceholderText("服务器地址");
     serverAddressInput->setText("127.0.0.1");
@@ -49,18 +47,15 @@ MainWindow::MainWindow(QWidget *parent)
     disconnectButton = new QPushButton("断开", centralWidget);
     disconnectButton->setEnabled(false);
 
-    // 创建连接布局
     QHBoxLayout *connectionLayout = new QHBoxLayout();
     connectionLayout->addWidget(serverAddressInput);
     connectionLayout->addWidget(serverPortInput);
     connectionLayout->addWidget(connectButton);
     connectionLayout->addWidget(disconnectButton);
 
-    // 将连接布局和画布添加到主布局
     mainLayout->addLayout(connectionLayout);
     mainLayout->addWidget(m_drawingArea);
 
-    // 设置中央部件
     setCentralWidget(centralWidget);
 
     createActions();
@@ -87,7 +82,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::createActions()
 {
-    // 文件动作（使用图标替换文字）
+    qDebug() << "resource exists : /icon/line.png =" << QFile::exists(":/icon/line.png");
+    qDebug() << "QIcon isNull for line :" << QIcon(":/icon/line.png").isNull();
+
     m_newAction = new QAction(QIcon(":/icon/new.png"), tr("新建(&N)"), this);
     m_newAction->setShortcut(QKeySequence::New);
     m_newAction->setStatusTip(tr("创建新的画布"));
@@ -98,10 +95,16 @@ void MainWindow::createActions()
     m_openAction->setStatusTip(tr("打开已有图片"));
     connect(m_openAction, &QAction::triggered, this, &MainWindow::openFile);
 
-    // 新增：插入图片到选区（工具栏也会添加一个图标按钮）
-    m_insertImageAction = new QAction(tr("向区域插入已有图片"), this);
-    m_insertImageAction->setStatusTip(tr("在当前画布上插入一张图片"));
-    connect(m_insertImageAction,&QAction::triggered,m_imagePaster,&ImagePaster::chooseImage);
+    m_insertImageAction = new QAction(QIcon(":/icon/paste_image.png"), tr("向区域插入已有图片"), this);
+    m_insertImageAction->setStatusTip(tr("在当前画布上插入一张图片（从文件选择）"));
+    connect(m_insertImageAction, &QAction::triggered, m_imagePaster, &ImagePaster::chooseImage);
+
+    m_pasteImageAction = new QAction(tr("从剪贴板粘贴图片"), this);
+    m_pasteImageAction->setShortcut(QKeySequence::Paste);
+    m_pasteImageAction->setShortcutContext(Qt::ApplicationShortcut);
+    m_pasteImageAction->setStatusTip(tr("从剪贴板粘贴图片到画布"));
+    connect(m_pasteImageAction, &QAction::triggered, m_imagePaster, &ImagePaster::pasteFromClipboard);
+    addAction(m_pasteImageAction);
 
     m_saveAction = new QAction(QIcon(":/icon/save.png"), tr("保存(&S)"), this);
     m_saveAction->setShortcut(QKeySequence::Save);
@@ -123,7 +126,7 @@ void MainWindow::createActions()
     m_exitAction->setStatusTip(tr("退出应用程序"));
     connect(m_exitAction, &QAction::triggered, this, &QWidget::close);
     
-    // 绘图工具动作（只在工具栏显示图标）
+    // 绘图工具动作
     m_lineToolAction = new QAction(QIcon(":/icon/line.png"), tr("直线工具(&L)"), this);
     m_lineToolAction->setCheckable(true);
     m_lineToolAction->setShortcut(QKeySequence(Qt::Key_L));
@@ -149,35 +152,39 @@ void MainWindow::createActions()
     m_textToolAction->setShortcut(QKeySequence(Qt::Key_T));
     m_textToolAction->setStatusTip(tr("插入文本框并输入文本"));
     connect(m_textToolAction, &QAction::triggered, this, &MainWindow::selectTextTool);
-    
+
+    m_eraserToolAction = new QAction(QIcon(":/icon/clear.png"), tr("橡皮擦(&E)"), this);
+    m_eraserToolAction->setCheckable(true);
+    m_eraserToolAction->setShortcut(QKeySequence(Qt::Key_E));
+    m_eraserToolAction->setStatusTip(tr("矩形框选擦除（橡皮擦）"));
+    connect(m_eraserToolAction, &QAction::triggered, this, &MainWindow::selectEraserTool);
+
     // 创建工具组
     m_toolGroup = new QActionGroup(this);
     m_toolGroup->addAction(m_lineToolAction);
     m_toolGroup->addAction(m_rectangleToolAction);
     m_toolGroup->addAction(m_curveToolAction);
     m_toolGroup->addAction(m_textToolAction);
-    
+    m_toolGroup->addAction(m_eraserToolAction);
+
     // 帮助动作
     m_aboutAction = new QAction(QIcon(":/icon/about.png"), tr("关于(&A)"), this);
     m_aboutAction->setStatusTip(tr("显示应用程序信息"));
     connect(m_aboutAction, &QAction::triggered, this, &MainWindow::about);
 
-    // 工具栏中的“插入图片到选区”图标动作
-    m_insertImageToRectAction = new QAction(QIcon(":/icon/paste_image.png"), tr("插入图片"), this);
+    m_insertImageToRectAction = new QAction(QIcon(":/icon/paste_image.png"), tr("插入图片到选区"), this);
     m_insertImageToRectAction->setStatusTip(tr("在选定区域插入已有图片"));
     connect(m_insertImageToRectAction, &QAction::triggered, m_imagePaster, &ImagePaster::chooseImage);
 }
 
 void MainWindow::createMenus()
 {
-    // 文件菜单（保留文字菜单项，便于访问）
     m_fileMenu = menuBar()->addMenu(tr("文件(&F)"));
     m_fileMenu->addAction(m_newAction);
 
     m_openMenu = m_fileMenu->addMenu(tr("打开(&O)"));
-    // 打开子菜单里放两个动作
     m_openMenu->addAction(m_openAction);
-    // 新增的“打开图片”动作（菜单保留文本）
+    // 菜单中仍可保留一个文本入口到插入图片（从文件选择）
     m_openMenu->addAction(m_insertImageAction);
 
     m_fileMenu->addSeparator();
@@ -188,49 +195,50 @@ void MainWindow::createMenus()
     m_fileMenu->addSeparator();
     m_fileMenu->addAction(m_exitAction);
 
-    // 工具菜单（保留文本菜单）
     m_toolMenu = menuBar()->addMenu(tr("工具(&T)"));
     m_toolMenu->addAction(m_lineToolAction);
     m_toolMenu->addAction(m_rectangleToolAction);
     m_toolMenu->addAction(m_curveToolAction);
     m_toolMenu->addAction(m_textToolAction);
-    
-    // 帮助菜单
+    m_toolMenu->addAction(m_eraserToolAction);
+
     m_helpMenu = menuBar()->addMenu(tr("帮助(&H)"));
     m_helpMenu->addAction(m_aboutAction);
 }
+
 void MainWindow::createToolBars()
 {
-    // 文件工具栏（图标）
     m_fileToolBar = addToolBar(tr("文件"));
+    m_fileToolBar->setIconSize(QSize(32, 32));
+    m_fileToolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     m_fileToolBar->addAction(m_newAction);
     m_fileToolBar->addAction(m_openAction);
     m_fileToolBar->addAction(m_saveAction);
     m_fileToolBar->addSeparator();
     m_fileToolBar->addAction(m_clearAction);
     
-    // 绘图工具栏（图标）
     m_drawingToolBar = addToolBar(tr("绘图工具"));
+    m_drawingToolBar->setIconSize(QSize(32, 32));
+    m_drawingToolBar->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
     m_drawingToolBar->addAction(m_lineToolAction);
     m_drawingToolBar->addAction(m_rectangleToolAction);
     m_drawingToolBar->addAction(m_curveToolAction);
-    m_drawingToolBar->addAction(m_textToolAction); // 文本工具图标
+    m_drawingToolBar->addAction(m_textToolAction);
+    m_drawingToolBar->addAction(m_eraserToolAction);
     m_drawingToolBar->addSeparator();
 
-    // 插入图片按钮（图标）
-    m_drawingToolBar->addAction(m_insertImageToRectAction);
+    // 按钮（从文件选择插入）放到工具栏上
+    m_drawingToolBar->addAction(m_insertImageAction);
     m_drawingToolBar->addSeparator();
-    
-    // 颜色选择按钮（用图标 + 小按钮组合）
+
     m_colorButton = new QPushButton(this);
     m_colorButton->setIcon(QIcon(":/icon/color.png"));
-    m_colorButton->setFixedSize(36, 30);
+    m_colorButton->setFixedSize(40, 40);
     connect(m_colorButton, &QPushButton::clicked, this, &MainWindow::changePenColor);
     m_drawingToolBar->addWidget(m_colorButton);
     
     m_drawingToolBar->addSeparator();
     
-    // 画笔宽度设置
     m_penWidthLabel = new QLabel(tr("画笔宽度:"), this);
     m_drawingToolBar->addWidget(m_penWidthLabel);
     
@@ -341,6 +349,14 @@ void MainWindow::selectTextTool()
     updateToolStatus();
     statusBar()->showMessage(tr("已选择文本工具"), 2000);
 }
+void MainWindow::selectEraserTool()
+{
+    DrawingTool tool = m_drawingArea->getDrawingTool();
+    tool.setToolType(ToolType::Eraser);
+    m_drawingArea->setDrawingTool(tool);
+    updateToolStatus();
+    statusBar()->showMessage(tr("已选择橡皮擦工具"), 2000);
+}
 void MainWindow::changePenColor()
 {
     DrawingTool tool = m_drawingArea->getDrawingTool();
@@ -352,7 +368,6 @@ void MainWindow::changePenColor()
         tool.setPenColor(newColor);
         m_drawingArea->setDrawingTool(tool);
         
-        // 更新颜色按钮的显示（保留图标，改变背景色以示当前颜色）
         QString colorStyle = QString("QPushButton { background-color: %1; }")
                             .arg(newColor.name());
         m_colorButton->setStyleSheet(colorStyle);
@@ -381,6 +396,7 @@ void MainWindow::about()
                          "<li>自定义画笔颜色和宽度</li>"
                          "<li>保存和加载图片</li>"
                          "<li>清空画布功能</li>"
+                         "<li>矩形框选擦除（橡皮擦）</li>"
                          "</ul>"
                          "<p>使用Qt框架开发</p>"));
 }
@@ -388,7 +404,6 @@ void MainWindow::updateToolStatus()
 {
     DrawingTool tool = m_drawingArea->getDrawingTool();
     
-    // 更新工具按钮状态
     if (tool.getToolType() == ToolType::Line) {
         m_lineToolAction->setChecked(true);
     } 
@@ -398,14 +413,15 @@ void MainWindow::updateToolStatus()
     else if (tool.getToolType() == ToolType::Text) {
         m_textToolAction->setChecked(true);
     }
+    else if (tool.getToolType() == ToolType::Eraser) {
+        m_eraserToolAction->setChecked(true);
+    }
     else {
         m_curveToolAction->setChecked(true);
     }
     
-    // 更新画笔宽度显示
     m_penWidthSpinBox->setValue(tool.getPenWidth());
     
-    // 更新颜色按钮显示
     QColor color = tool.getPenColor();
     QString colorStyle = QString("QPushButton { background-color: %1; }")
                         .arg(color.name());
@@ -490,14 +506,13 @@ void MainWindow::processReceivedData()
                 break;
             }
             else if (receive_buffer.startsWith("IMG|")) {
-                if (receive_buffer.size() >= 9) { // "IMG|" + 4位数字 + "|"
+                if (receive_buffer.size() >= 9) {
                     QString filename_size_str = QString::fromUtf8(receive_buffer.mid(4, 4));
                     bool ok;
                     int filename_size = filename_size_str.toInt(&ok);
 
                     if (ok && filename_size > 0) {
-                        // 检查是否有完整的文件名和图片大小头部
-                        int total_header_size = 9 + filename_size + 1 + 8 + 1; // IMG|xxxx|filename|xxxxxxxx|
+                        int total_header_size = 9 + filename_size + 1 + 8 + 1;
                         if (receive_buffer.size() >= total_header_size) {
                             current_filename = QString::fromUtf8(receive_buffer.mid(9, filename_size));
 
@@ -514,17 +529,15 @@ void MainWindow::processReceivedData()
                         }
                     }
                 }
-                break; // 等待更多数据
+                break;
             }
             else {
-                // 未知格式，清除错误数据
                 receive_buffer.clear();
                 break;
             }
         }
         else if (current_state == ReceivingMessage) {
             if (receive_buffer.size() >= expected_data_size) {
-                // 接收完整消息
                 QByteArray message_data = receive_buffer.left(expected_data_size);
                 receive_buffer.remove(0, expected_data_size);
                 char split;
@@ -541,18 +554,17 @@ void MainWindow::processReceivedData()
                 current_state = WaitingForHeader;
                 continue;
             }
-            break; // 等待更多数据
+            break;
         }
         else if (current_state == ReceivingImage) {
             if (receive_buffer.size() >= expected_data_size) {
-                // 接收完整图片
                 QByteArray image_data = receive_buffer.left(expected_data_size);
 
                 receive_buffer.remove(0, expected_data_size);
                 resetReceiveState();
                 continue;
             }
-            break; // 等待更多数据
+            break;
         }
     }
 }

@@ -14,10 +14,15 @@ DrawingArea::DrawingArea(QWidget *parent, MainWindow *window)
     , m_drawing(false)
     , window(window)
     , m_text_edit(nullptr)
+    , m_eraser_rubberBand(nullptr)
+    , m_eraser_dragging(false)
 {
     setAttribute(Qt::WA_StaticContents);
     setMinimumSize(800, 600);
     initializeCanvas();
+
+    m_eraser_rubberBand = new QRubberBand(QRubberBand::Rectangle, this);
+    m_eraser_rubberBand->hide();
 }
 
 void DrawingArea::initializeCanvas()
@@ -44,7 +49,6 @@ DrawingTool DrawingArea::getDrawingTool() const
 
 void DrawingArea::clearCanvas()
 {
-    // 清除可能存在的文本编辑器
     if (m_text_edit) {
         m_text_edit->deleteLater();
         m_text_edit = nullptr;
@@ -97,7 +101,6 @@ void DrawingArea::paintEvent(QPaintEvent *event)
     QRect dirtyRect = event->rect();
     painter.drawPixmap(dirtyRect, m_canvas, dirtyRect);
 
-    // 如果正在绘制直线，显示预览线
     if (m_drawing && m_drawing_tool.getToolType() == ToolType::Line) {
         painter.setPen(m_drawing_tool.getPen());
         painter.drawLine(m_start_point, m_last_point);
@@ -109,14 +112,13 @@ void DrawingArea::paintEvent(QPaintEvent *event)
         painter.drawLine(m_firstcorner_point, m_last_point);
         painter.drawLine(m_secondcorner_point, m_last_point);
     }
+    // 橡皮擦不在这里绘制（使用 QRubberBand 做可视化），擦除在 mouseRelease 执行
 }
 
 void DrawingArea::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        // 若当前是文本工具，弹出输入框，不进入绘制
         if (m_drawing_tool.getToolType() == ToolType::Text) {
-            // 若已有编辑框，则先提交
             if (m_text_edit) {
                 commitTextEdit();
             }
@@ -130,11 +132,19 @@ void DrawingArea::mousePressEvent(QMouseEvent *event)
             m_text_edit->show();
             m_text_edit->setFocus();
 
-            // 回车或失去焦点时提交文本到画布
             connect(m_text_edit, &QLineEdit::editingFinished, this, [this]() {
                 commitTextEdit();
             });
 
+            return;
+        }
+        else if (m_drawing_tool.getToolType() == ToolType::Eraser) {
+            // 橡皮擦开始，显示 rubber band
+            m_eraser_dragging = true;
+            m_eraser_start = event->pos();
+            m_eraser_end = m_eraser_start;
+            m_eraser_rubberBand->setGeometry(QRect(m_eraser_start, QSize()));
+            m_eraser_rubberBand->show();
             return;
         }
 
@@ -150,51 +160,69 @@ void DrawingArea::mousePressEvent(QMouseEvent *event)
 
 void DrawingArea::mouseMoveEvent(QMouseEvent *event)
 {
-    if (event->buttons() & Qt::LeftButton && m_drawing) {
-        QPoint current_point = event->pos();
-
-        if (m_drawing_tool.getToolType() == ToolType::Curve) {
-            // 曲线绘制：实时绘制到画布
+    if (event->buttons() & Qt::LeftButton) {
+        if (m_drawing_tool.getToolType() == ToolType::Curve && m_drawing) {
+            QPoint current_point = event->pos();
             window->sendMessage(m_last_point, current_point, m_drawing_tool.getPenColor(), m_drawing_tool.getPenWidth());
             m_last_point = current_point;
         }
-        else if (m_drawing_tool.getToolType() == ToolType::Rectangle) {
-            // 矩形绘制：只更新预览
-            m_last_point = current_point;
+        else if (m_drawing_tool.getToolType() == ToolType::Rectangle && m_drawing) {
+            m_last_point = event->pos();
             m_firstcorner_point = QPoint(m_start_point.x(), m_last_point.y());
             m_secondcorner_point = QPoint(m_last_point.x(), m_start_point.y());
             update();
         }
-        else {
-            // 直线绘制：只更新预览
-            m_last_point = current_point;
-            update();  // 触发重绘显示预览线
+        else if (m_drawing_tool.getToolType() == ToolType::Line && m_drawing) {
+            m_last_point = event->pos();
+            update();
+        }
+        else if (m_drawing_tool.getToolType() == ToolType::Eraser && m_eraser_dragging) {
+            m_eraser_end = event->pos();
+            QRect r(m_eraser_start, m_eraser_end);
+            m_eraser_rubberBand->setGeometry(r.normalized());
         }
     }
 }
 
 void DrawingArea::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::LeftButton && m_drawing) {
-        QPoint end_point = event->pos();
-        QPoint finalfirstcorner_point = QPoint(m_start_point.x(), end_point.y());
-        QPoint finalsecondcorner_point = QPoint(end_point.x(), m_start_point.y());
-
-        if (m_drawing_tool.getToolType() == ToolType::Line) {
-            // 直线绘制：在鼠标释放时绘制最终直线
+    if (event->button() == Qt::LeftButton) {
+        if (m_drawing_tool.getToolType() == ToolType::Line && m_drawing) {
+            QPoint end_point = event->pos();
             window->sendMessage(m_start_point, end_point, m_drawing_tool.getPenColor(), m_drawing_tool.getPenWidth());
             update();
+            m_drawing = false;
+            m_current_path.clear();
+            return;
         }
-        else if (m_drawing_tool.getToolType() == ToolType::Rectangle) {
+        else if (m_drawing_tool.getToolType() == ToolType::Rectangle && m_drawing) {
+            QPoint end_point = event->pos();
+            QPoint finalfirstcorner_point = QPoint(m_start_point.x(), end_point.y());
+            QPoint finalsecondcorner_point = QPoint(end_point.x(), m_start_point.y());
+
             window->sendMessage(m_start_point, finalfirstcorner_point, m_drawing_tool.getPenColor(), m_drawing_tool.getPenWidth());
             window->sendMessage(m_start_point, finalsecondcorner_point, m_drawing_tool.getPenColor(), m_drawing_tool.getPenWidth());
             window->sendMessage(finalfirstcorner_point, end_point, m_drawing_tool.getPenColor(), m_drawing_tool.getPenWidth());
             window->sendMessage(finalsecondcorner_point, end_point, m_drawing_tool.getPenColor(), m_drawing_tool.getPenWidth());
             update();
+            m_drawing = false;
+            m_current_path.clear();
+            return;
         }
+        else if (m_drawing_tool.getToolType() == ToolType::Eraser && m_eraser_dragging) {
+            m_eraser_dragging = false;
+            m_eraser_end = event->pos();
+            m_eraser_rubberBand->hide();
 
-        m_drawing = false;
-        m_current_path.clear();
+            QRect target = QRect(m_eraser_start, m_eraser_end).normalized();
+            if (!target.isEmpty()) {
+                QPainter p(&m_canvas);
+                p.fillRect(target, Qt::white);
+                p.end();
+                update(target);
+            }
+            return;
+        }
     }
 }
 
@@ -229,7 +257,6 @@ void DrawingArea::drawRectangle(const QPoint &startPoint, const QPoint &endPoint
     painter.drawLine(firstcornerPoint, endPoint);
     painter.drawLine(secondcornerPoint, endPoint);
 
-    // 更新需要重绘的区域
     int rad = m_drawing_tool.getPenWidth() / 2 + 2;
     QRect updateRect = QRect(startPoint, endPoint).normalized()
                            .adjusted(-rad, -rad, +rad, +rad);
@@ -255,7 +282,6 @@ void DrawingArea::commitTextEdit()
         QPen pen = m_drawing_tool.getPen();
         painter.setPen(pen);
 
-        // 使用适度的字体（你可根据需要调整）
         QFont font = painter.font();
         font.setPointSize(14);
         painter.setFont(font);

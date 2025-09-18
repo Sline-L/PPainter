@@ -7,6 +7,13 @@
 #include <QPaintEvent>
 #include <QMessageBox>
 #include <qrubberband.h>
+#include <QGuiApplication>
+#include <QClipboard>
+#include <QMimeData>
+#include <QVariant>
+#include <QImage>
+
+using namespace std;
 
 ImagePaster::ImagePaster(DrawingArea *area)
     : QObject(area),
@@ -14,7 +21,6 @@ ImagePaster::ImagePaster(DrawingArea *area)
     m_enabled(false),
     m_dragging(false)
 {
-    // 安装事件过滤器到画布上
     m_area->installEventFilter(this);
     m_rubberBand = new QRubberBand(QRubberBand::Rectangle, m_area);
     m_rubberBand->hide();
@@ -22,16 +28,14 @@ ImagePaster::ImagePaster(DrawingArea *area)
 
 void ImagePaster::chooseImage()
 {
-    // 弹出文件对话框，只限 png, jpg
     QString fileName = QFileDialog::getOpenFileName(
         m_area,
         tr("选择图片"),
         QString(),
-        tr("图片文件 (*.png *.jpg)"));
+        tr("图片文件 (*.png *.jpg *.jpeg *.bmp *.gif)"));
     if (fileName.isEmpty())
         return;
 
-    // 载入到 QPixmap
     if (!m_pixmap.load(fileName)) {
         QMessageBox::warning(m_area,
                              tr("加载失败"),
@@ -39,16 +43,40 @@ void ImagePaster::chooseImage()
         return;
     }
 
-    // 切换到贴图模式
     m_enabled = true;
+}
+
+void ImagePaster::pasteFromClipboard()
+{
+    const QClipboard *clipboard = QGuiApplication::clipboard();
+    if (!clipboard) return;
+
+    QImage img = clipboard->image();
+    if (!img.isNull()) {
+        m_pixmap = QPixmap::fromImage(img);
+        m_enabled = true;
+        return;
+    }
+
+    const QMimeData *mime = clipboard->mimeData();
+    if (mime && mime->hasImage()) {
+        QVariant v = mime->imageData();
+        QImage im = qvariant_cast<QImage>(v);
+        if (!im.isNull()) {
+            m_pixmap = QPixmap::fromImage(im);
+            m_enabled = true;
+            return;
+        }
+    }
+
+    QMessageBox::information(m_area, tr("剪贴板无图像"), tr("剪贴板中没有可用的图像"));
 }
 
 void ImagePaster::cancel()
 {
-    // 退出贴图模式
     m_enabled = false;
     m_dragging = false;
-    m_area->update();  // 清除可能残留的虚线框
+    m_area->update();
 }
 
 bool ImagePaster::eventFilter(QObject *watched, QEvent *event)
@@ -64,7 +92,6 @@ bool ImagePaster::eventFilter(QObject *watched, QEvent *event)
             m_endPoint   = m_startPoint;
             m_dragging   = true;
 
-            // 显示一个 0 大小的 rubber band
             m_rubberBand->setGeometry(QRect(m_startPoint, QSize()));
             m_rubberBand->show();
 
@@ -77,7 +104,6 @@ bool ImagePaster::eventFilter(QObject *watched, QEvent *event)
             auto *me = static_cast<QMouseEvent*>(event);
             m_endPoint = me->pos();
 
-            // 更新 rubber band 的大小/位置
             QRect r(m_startPoint, m_endPoint);
             m_rubberBand->setGeometry(r.normalized());
             return true;
@@ -90,12 +116,10 @@ bool ImagePaster::eventFilter(QObject *watched, QEvent *event)
             m_dragging = false;
             m_endPoint = me->pos();
 
-            // 拖完就隐藏 rubber band
             m_rubberBand->hide();
 
-            // 下面这段照搬你原来把图贴到 canvas 的逻辑
             QRect target = QRect(m_startPoint, m_endPoint).normalized();
-            if (!target.isEmpty()) {
+            if (!target.isEmpty() && !m_pixmap.isNull()) {
                 QPixmap scaled = m_pixmap.scaled(
                     target.size(),
                     Qt::KeepAspectRatio,
